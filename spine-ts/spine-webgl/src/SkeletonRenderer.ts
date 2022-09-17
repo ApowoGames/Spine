@@ -34,12 +34,12 @@ import { ManagedWebGLRenderingContext, WebGLBlendModeConverter } from "./WebGL";
 
 
 class Renderable {
-	constructor (public vertices: NumberArrayLike, public numVertices: number, public numFloats: number) { }
+	constructor(public vertices: NumberArrayLike, public numVertices: number, public numFloats: number) { }
 };
 
 export class SkeletonRenderer {
 	static QUAD_TRIANGLES = [0, 1, 2, 2, 3, 0];
-
+	static FRAME_RATE = 5;
 	premultipliedAlpha = false;
 	private tempColor = new Color();
 	private tempColor2 = new Color();
@@ -53,14 +53,14 @@ export class SkeletonRenderer {
 	private temp3 = new Color();
 	private temp4 = new Color();
 
-	constructor (context: ManagedWebGLRenderingContext, twoColorTint: boolean = true) {
+	constructor(context: ManagedWebGLRenderingContext, twoColorTint: boolean = true) {
 		this.twoColorTint = twoColorTint;
 		if (twoColorTint)
 			this.vertexSize += 4;
 		this.vertices = Utils.newFloatArray(this.vertexSize * 1024);
 	}
 
-	draw (batcher: PolygonBatcher, skeleton: Skeleton, slotRangeStart: number = -1, slotRangeEnd: number = -1) {
+	draw(batcher: PolygonBatcher, skeleton: Skeleton, slotRangeStart: number = -1, slotRangeEnd: number = -1) {
 		let clipper = this.clipper;
 		let premultipliedAlpha = this.premultipliedAlpha;
 		let twoColorTint = this.twoColorTint;
@@ -103,7 +103,17 @@ export class SkeletonRenderer {
 
 			let attachment = slot.getAttachment();
 			let texture: GLTexture;
+			let currentTime = Date.now();
+			let frameTime = 1 / SkeletonRenderer.FRAME_RATE;
 			if (attachment instanceof RegionAttachment) {
+				// Automatic sequence looping
+				if (attachment.sequence) {
+					// Length of animation in frames
+					let count = attachment.sequence.regions.length;
+					let index = Math.round(currentTime / frameTime);
+					index %= count;
+					slot.sequenceIndex = index;
+				}
 				let region = <RegionAttachment>attachment;
 				renderable.vertices = this.vertices;
 				renderable.numVertices = 4;

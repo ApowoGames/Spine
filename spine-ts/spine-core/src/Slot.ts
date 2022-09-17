@@ -27,6 +27,7 @@
  * THE SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
+import { Animation, AttachmentTimeline } from "./Animation";
 import { Attachment, VertexAttachment } from "./attachments/Attachment";
 import { Bone } from "./Bone";
 import { Skeleton } from "./Skeleton";
@@ -65,7 +66,7 @@ export class Slot {
 	 * See {@link VertexAttachment#computeWorldVertices()} and {@link DeformTimeline}. */
 	deform = new Array<number>();
 
-	constructor (data: SlotData, bone: Bone) {
+	constructor(data: SlotData, bone: Bone) {
 		if (!data) throw new Error("data cannot be null.");
 		if (!bone) throw new Error("bone cannot be null.");
 		this.data = data;
@@ -76,19 +77,19 @@ export class Slot {
 	}
 
 	/** The skeleton this slot belongs to. */
-	getSkeleton (): Skeleton {
+	getSkeleton(): Skeleton {
 		return this.bone.skeleton;
 	}
 
 	/** The current attachment for the slot, or null if the slot has no attachment. */
-	getAttachment (): Attachment | null {
+	getAttachment(): Attachment | null {
 		return this.attachment;
 	}
 
 	/** Sets the slot's attachment and, if the attachment changed, resets {@link #sequenceIndex} and clears the {@link #deform}.
 	 * The deform is not cleared if the old attachment has the same {@link VertexAttachment#getTimelineAttachment()} as the
 	 * specified attachment. */
-	setAttachment (attachment: Attachment | null) {
+	setAttachment(attachment: Attachment | null) {
 		if (this.attachment == attachment) return;
 		if (!(attachment instanceof VertexAttachment) || !(this.attachment instanceof VertexAttachment)
 			|| (<VertexAttachment>attachment).timelineAttachment != (<VertexAttachment>this.attachment).timelineAttachment) {
@@ -99,7 +100,7 @@ export class Slot {
 	}
 
 	/** Sets this slot to the setup pose. */
-	setToSetupPose () {
+	setToSetupPose() {
 		this.color.setFromColor(this.data.color);
 		if (this.darkColor) this.darkColor.setFromColor(this.data.darkColor!);
 		if (!this.data.attachmentName)
@@ -109,4 +110,22 @@ export class Slot {
 			this.setAttachment(this.bone.skeleton.getAttachment(this.data.index, this.data.attachmentName));
 		}
 	}
+
+
+	createCustromAnimation(animationName:string,animationNum: number, slotIndex: number, attachName: string): boolean {
+		if (slotIndex != -1 && slotIndex <= this.bone.skeleton.slots.length) {
+			let alphaTimeline: AttachmentTimeline = new AttachmentTimeline(animationNum, slotIndex);
+			for (let i: number = 0; i < animationNum; i++) {
+				alphaTimeline.setFrame(i, 0.5, attachName);
+			}
+			let timelineOut = [];
+			timelineOut.push(alphaTimeline);
+			const anim: Animation = new Animation(animationName, timelineOut, 1.03334);
+			this.bone.skeleton.data.animations.push(anim);
+			return true;
+		}
+		return false;
+	}
+
+	// addAnimation(1, "blink", true, 1f);
 }

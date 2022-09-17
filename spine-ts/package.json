@@ -43,6 +43,7 @@
     "url": "https://github.com/esotericsoftware/spine-runtimes/issues"
   },
   "homepage": "https://github.com/esotericsoftware/spine-runtimes#readme",
+  "private":true,
   "workspaces": [
     "spine-core",
     "spine-canvas",

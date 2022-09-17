@@ -35,6 +35,7 @@ const worldVertices = Utils.newFloatArray(8);
 export class SkeletonRenderer {
 	static QUAD_TRIANGLES = [0, 1, 2, 2, 3, 0];
 	static VERTEX_SIZE = 2 + 2 + 4;
+	static FRAME_RATE = 5;
 
 	private ctx: CanvasRenderingContext2D;
 
@@ -43,16 +44,16 @@ export class SkeletonRenderer {
 	private vertices = Utils.newFloatArray(8 * 1024);
 	private tempColor = new Color();
 
-	constructor (context: CanvasRenderingContext2D) {
+	constructor(context: CanvasRenderingContext2D) {
 		this.ctx = context;
 	}
 
-	draw (skeleton: Skeleton) {
+	draw(skeleton: Skeleton) {
 		if (this.triangleRendering) this.drawTriangles(skeleton);
 		else this.drawImages(skeleton);
 	}
 
-	private drawImages (skeleton: Skeleton) {
+	private drawImages(skeleton: Skeleton) {
 		let ctx = this.ctx;
 		let color = this.tempColor;
 		let skeletonColor = skeleton.color;
@@ -60,6 +61,8 @@ export class SkeletonRenderer {
 
 		if (this.debugRendering) ctx.strokeStyle = "green";
 
+		let currentTime = Date.now();
+		let frameTime = 1 / SkeletonRenderer.FRAME_RATE;
 		for (let i = 0, n = drawOrder.length; i < n; i++) {
 			let slot = drawOrder[i];
 			let bone = slot.bone;
@@ -67,6 +70,16 @@ export class SkeletonRenderer {
 
 			let attachment = slot.getAttachment();
 			if (!(attachment instanceof RegionAttachment)) continue;
+
+
+			// Automatic sequence looping
+			if (attachment.sequence) {
+				// Length of animation in frames
+				let count = attachment.sequence.regions.length;
+				let index = Math.round(currentTime / frameTime);
+				index %= count;
+				slot.sequenceIndex = index;
+			}
 			attachment.computeWorldVertices(slot, worldVertices, 0, 2);
 			let region: TextureAtlasRegion = <TextureAtlasRegion>attachment.region;
 			let image: HTMLImageElement = (<CanvasTexture>region.page.texture).getImage() as HTMLImageElement;
@@ -104,7 +117,7 @@ export class SkeletonRenderer {
 		}
 	}
 
-	private drawTriangles (skeleton: Skeleton) {
+	private drawTriangles(skeleton: Skeleton) {
 		let ctx = this.ctx;
 		let color = this.tempColor;
 		let skeletonColor = skeleton.color;
@@ -174,7 +187,7 @@ export class SkeletonRenderer {
 
 	// Adapted from http://extremelysatisfactorytotalitarianism.com/blog/?p=2120
 	// Apache 2 licensed
-	private drawTriangle (img: HTMLImageElement, x0: number, y0: number, u0: number, v0: number,
+	private drawTriangle(img: HTMLImageElement, x0: number, y0: number, u0: number, v0: number,
 		x1: number, y1: number, u1: number, v1: number,
 		x2: number, y2: number, u2: number, v2: number) {
 		let ctx = this.ctx;
@@ -221,7 +234,7 @@ export class SkeletonRenderer {
 		ctx.restore();
 	}
 
-	private computeRegionVertices (slot: Slot, region: RegionAttachment, pma: boolean) {
+	private computeRegionVertices(slot: Slot, region: RegionAttachment, pma: boolean) {
 		let skeletonColor = slot.bone.skeleton.color;
 		let slotColor = slot.color;
 		let regionColor = region.color;
@@ -269,7 +282,7 @@ export class SkeletonRenderer {
 		return vertices;
 	}
 
-	private computeMeshVertices (slot: Slot, mesh: MeshAttachment, pma: boolean) {
+	private computeMeshVertices(slot: Slot, mesh: MeshAttachment, pma: boolean) {
 		let skeletonColor = slot.bone.skeleton.color;
 		let slotColor = slot.color;
 		let regionColor = mesh.color;
